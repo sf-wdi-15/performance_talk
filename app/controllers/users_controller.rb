@@ -26,9 +26,11 @@ class UsersController < ApplicationController
   end
 
   def show
-    @user = User.find_by({id: params[:id]})
+    # grabs both the user and associated articles
+    @user = User.includes(:articles => :tags).find_by({id: params[:id]})
     @articles = @user.articles
   end
+
 
   def edit
   end
