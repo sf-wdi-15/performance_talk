@@ -7,6 +7,8 @@ class Article < ActiveRecord::Base
   has_many :article_tags
 
   has_many :tags, through: :article_tags
+
+  has_many :comments, as: :commentable
   
   validates_presence_of :title
   
