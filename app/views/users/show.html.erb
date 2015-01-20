@@ -1,0 +1,9 @@
+<h1>Users#show</h1>
+<p>Find me in app/views/users/show.html.erb</p>
+
+<%= @user.first_name %>
+
+
+<% @articles.each do |article| %>
+  <%= render partial: "articles/preview", locals: {article: article }%>
+<% end %>

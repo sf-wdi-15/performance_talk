@@ -1,0 +1,14 @@
+<div class="row">
+  <div class="article col-xs-8 col-xs-offset-2">
+    <div class="article-title"><h1><%=article.title.titleize %></h1></div>
+    <div class="article-author">By: <%= article.author %></div>
+    <div class="article-content">
+      <% article.content.split("\n").each do |p| %>
+        <p><%= p %></p>
+      <% end %>
+    </div>
+    <div class="article-keywords">
+      <%= article.keywords %>
+    </div>
+  </div>
+</div>
