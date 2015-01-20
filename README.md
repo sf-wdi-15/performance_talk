@@ -2,56 +2,132 @@
 ## Common Refactorings
 
 
-## Part 2: More Relationships
+## Part 3: Eager To Change
 
-Sometimes we want to add functionality that seems like a simple model until we realize that our association is not quite as simple as we would have hoped.
+One of the best ways to increase performance is to take a look at our controller and models to identify where queries are taking place. The goal is just to reduce potential queries into earlier queries. This concept is called Eager Loading, because it seeks to load data in the hopes that we'll need it.
 
-Let's try to add the ability to comment on a blog. This seems straight forward.
+### N + 1 Query Problem
 
+See this [link](http://edgeguides.rubyonrails.org/active_record_querying.html#eager-loading-associations) on the definition of the [problem](http://edgeguides.rubyonrails.org/active_record_querying.html#eager-loading-associations).
 
-* We could model this association as a simple `1:N`, but in reality we lose the ability to have subcomments or `nested comments`.
+### `includes`
 
-## Phase 1: Implementing A Polymorphic Association
+The key method for included more data in our queries is going to be to use the `includes` method. 
 
-We want to add a polymorphic association to our application when we have the following situation
-
-* A new model that can belong to many different models
-* A single model can only belong to one other model at any given time.
-
-![imageable](http://guides.rubyonrails.org/images/polymorphic.png)
+Let's take a look around to see if we see this in our application:
 
 
-Another good example would be adding a comment:
+```
+class UsersController < ApplicationController
+  
+  ...
+
+  def show
+    @user = User.find_by({id: params[:id]})
+    @articles = @user.articles
+  end
+
+  ...
+end
+```
+
+Hmm.. is that all? Let's check out the view.
+
+`users/show.html.erb`
+
+```
+<h1>Users#show</h1>
+<p>Find me in app/views/users/show.html.erb</p>
+
+<%= @user.first_name %>
 
 
-* A comment can either belong to an `article` or another `comment` but it cannot belong to both at the same time.
+<% @articles.each do |article| %>
+  <%= render partial: "articles/preview", locals: {article: article }%>
+<% end %>
+
+```
+
+We see here that we are rendering each article... let's examine that partial.
+
+`articles/_preview.html.erb`
+
+```
+
+<div>
+  <div>
+    <h2><%= link_to article.title.titleize, article_path(article) %></h2>
+  </div>
+  <div>
+    <% if article.keywords %>
+      <span class="article-keywords"><%= article.keywords %></span>
+    <% end %>
+  </div>
+</div>
+
+```
+
+it looks like we are calling `article.keywords` in our `_preview`. Let's take a look at what that is doing.
 
 
-## Part 2: Planning Our Relationship
+`models/article.rb`
+
+```
+
+  def keywords
+    unless @keywords
+      # makes a request for tags from the db
+      words = tags.map {|t| t.text }
+      @keywords = words.join(" | ")
+    else
+      @keywords
+    end
+  end
 
 
-* Comments
-
-| text | user_id | commentable_id | commentable_type |
-| :--- | :--- | :--- | :--- |
-| text from the comment | the `user_id` of the person who left it | the `id` of the model it belongs_to | the name of table where to look up the id |
+```
 
 
-
-### Question 
-
-* What will our updated ERD look like with the new comments model?
-
-### Answer
-
-![model_refactor_2](images/model_erd_refactor_2.png)
+It looks like our show page has the following list of models being loaded.
 
 
+```
+load User
+load User Articles
+load Tags Associated to User Articles
+```
 
-## Part 3: Implementation
+We could the first two queries into one quite easily
 
-* Generate the `comment` model with the appropriate attributes.
-* Update the `comment` and `article` to have the appropriate associations.
+```
+class UsersController < ApplicationController
+  
+  ...
 
-We will wait until a later section to actually generate views to help manage commenting, but you should try testing that comments work in the `rails console`.
+  def show
+    # grabs both the user and associated articles
+    @user = User.includes(:articles).find_by({id: params[:id]})
+    @articles = @user.articles
+  end
 
+  ...
+end
+```
+
+But we know that the `keywords` method also selects the associated `tags`, so we should grab that as well.
+
+
+```
+class UsersController < ApplicationController
+  
+  ...
+
+  def show
+    # grabs both the user and associated articles
+    @user = User.includes(:articles => :tags).find_by({id: params[:id]})
+    @articles = @user.articles
+  end
+
+  ...
+end
+```
