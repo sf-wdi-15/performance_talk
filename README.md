@@ -48,7 +48,7 @@ Another good example would be adding a comment:
 
 
 
-## Part 3: Implementation
+## Part 2: Implementation
 
 * Generate the `comment` model with the appropriate attributes.
 * Update the `comment` and `article` to have the appropriate associations.
