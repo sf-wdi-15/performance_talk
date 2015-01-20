@@ -4,7 +4,9 @@ class Article < ActiveRecord::Base
 
   belongs_to :user
 
-  has_many :tags
+  has_many :article_tags
+
+  has_many :tags, through: :article_tags
   
   validates_presence_of :title
   
